@@ -176,6 +176,7 @@ function openUi(player,globalDB,playerDB){
     MainForm.button("Set", 'textures/warpUI/SetWarp')
     MainForm.button("Delete", 'textures/warpUI/CrossWarp')
     MainForm.button("Teleport", 'textures/warpUI/CheckWarp')
+    MainForm.button("Add Player", `textures/warpUI/`)
     MainForm.show(player).then((MainFormResponse) => {
         const { selection } = MainFormResponse;
         switch(selection){
@@ -287,6 +288,9 @@ function openUi(player,globalDB,playerDB){
                     runCommand(`tp ${player.nameTag} ${cords.x} ${cords.y} ${cords.z}`, cords.dimension)
                     runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §9You have §asuccessfully §9warped to §b${warpList[selection].key}§9!"}]}`)
                 })
+                break;
+            case 3:
+                let addForm = new ModalFormData();
                 break;
         }
     })
