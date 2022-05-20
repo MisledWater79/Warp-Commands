@@ -290,7 +290,31 @@ function openUi(player,globalDB,playerDB){
                 })
                 break;
             case 3:
-                let addForm = new ModalFormData();
+            
+                let friendFormW = new ModalFormData();
+                let warps = []
+                let warpNames = []
+                for(const warp of playerDB.getData().data){
+                  warps.push(warp)
+                  warpNames.push(warp.key)
+                }
+                friendFormW.title("Add someone")
+                friendFormW.dropdown("Warps",warpNames)
+                friendFormW.show(player).then((friendFormWResponse) => {
+                  let warp = warps[friendFormWResponse.formValues[0]]
+                  let friendFormP = new ModalFormData();
+                  let players = []
+                  for(const player of world.getPlayers()){
+                    players.push(player.nameTag)
+                  }
+                  friendFormP.title("Add someone")
+                  friendFormP.dropdown("Players",players)
+                  friendFormP.show(player).then((friendFormPResponse) => {
+                    let fPlayer = players[friendFormPResponse.formValues[0]]
+                    let fPlayerDB = new Database(fPlayer.nameTag + 'Warps')
+                    fPlayerDB.set(player.nameTag + '-' + warp.key,warp.value)
+                  })
+                })
                 break;
         }
     })
