@@ -10,6 +10,7 @@ const registration = new CommandBuilder()
 .setDescription('Teleport to or set a warp')
 .setUsage([
     'set <warpName: string> <warpType: string>',
+    'add <warpname: string> <playerName: string>',
     'delete <warpName: string>',
     '<warpName: string>',
     'list',
@@ -37,6 +38,13 @@ const registration = new CommandBuilder()
     }).addInput(input => {
         return input.setRequired(false).setType('string').setName('warptype')
     }).setAliases(['s'])
+})
+.addGroup(group => {
+    return group.setName('add').setDescription('add someone').addInput(input => {
+        return input.setRequired(true).setType('string').setName('warpname')
+    }).addInput(input => {
+        return input.setRequired(true).setType('string').setName('playername')
+    }).setAliases(['a'])
 })
 
 CommandHandler.register(registration, (interaction) => {
@@ -87,6 +95,11 @@ CommandHandler.register(registration, (interaction) => {
             let message = ` §9You have made a warp named §b${setName} §9at §f(§9${Math.floor(player.location.x)} ${Math.floor(player.location.y)} ${Math.floor(player.location.z)}§f) §9in the`
             message += addDimension(player.dimension.id)
             runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"${message}"}]}`)
+            break;
+        case "add":
+            let addName = group.getInput('warpname').getValue()
+            let playerName = group.getInput('playername').getValue()
+            
             break;
         case "delete":
             let delName = group.getInput('warpname').getValue()
