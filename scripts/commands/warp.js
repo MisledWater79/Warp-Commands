@@ -10,7 +10,6 @@ const registration = new CommandBuilder()
 .setDescription('Teleport to or set a warp')
 .setUsage([
     'set <warpName: string> <warpType: string>',
-    'add <warpname: string> <playerName: string>',
     'delete <warpName: string>',
     '<warpName: string>',
     'list',
@@ -95,11 +94,6 @@ CommandHandler.register(registration, (interaction) => {
             let message = ` §9You have made a warp named §b${setName} §9at §f(§9${Math.floor(player.location.x)} ${Math.floor(player.location.y)} ${Math.floor(player.location.z)}§f) §9in the`
             message += addDimension(player.dimension.id)
             runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"${message}"}]}`)
-            break;
-        case "add":
-            let addName = group.getInput('warpname').getValue()
-            let playerName = group.getInput('playername').getValue()
-            
             break;
         case "delete":
             let delName = group.getInput('warpname').getValue()
@@ -189,7 +183,6 @@ function openUi(player,globalDB,playerDB){
     MainForm.button("Set", 'textures/warpUI/SetWarp')
     MainForm.button("Delete", 'textures/warpUI/CrossWarp')
     MainForm.button("Teleport", 'textures/warpUI/CheckWarp')
-    MainForm.button("Add Player", `textures/warpUI/`)
     MainForm.show(player).then((MainFormResponse) => {
         const { selection } = MainFormResponse;
         switch(selection){
