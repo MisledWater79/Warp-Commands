@@ -303,7 +303,6 @@ function openUi(player,globalDB,playerDB){
                 })
                 break;
             case 3:
-            
                 let friendFormW = new ModalFormData();
                 let warps = []
                 let warpNames = []
