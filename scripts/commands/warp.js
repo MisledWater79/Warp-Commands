@@ -47,7 +47,7 @@ CommandHandler.register(registration, (interaction) => {
         case "set":
             let setName = group.getInput('warpname').getValue()
             if(!player.hasTag('5fs:op')){
-                runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cUnknown command: delete. Please Check that the command exists and that you have permission to use it."}]}`)
+                runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cUnknown command: set. Please Check that the command exists and that you have permission to use it."}]}`)
                 break;
             }
             if(globalDB.has(setName)){
@@ -89,7 +89,7 @@ CommandHandler.register(registration, (interaction) => {
                     command = command.slice(0,command.length-1)
                     command += '}]'
                     let playerList = runCommand(command)
-                    if(playerList?.statusMessage.indexOf(player.nameTag) == -1){
+                    if(playerList?.statusMessage.indexOf(player.nameTag) == -1 || !playerList){
                         runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cUnknown warp: ${tpName}. Please Check that the warp exists."}]}`)
                         break;
                     }
@@ -151,17 +151,28 @@ function openUi(player,globalDB,playerDB){
         let warpList = []
         tpForm.title("Teleport to Warp")
         for(const warp of globalDB.getData().data){
-            warpList.push(warp)
-            switch(warp.value.dimension){
-                case "minecraft:overworld":
-                    tpForm.button(warp.key,'textures/warpUI/Overworld')
-                    break;
-                case "minecraft:nether":
-                    tpForm.button(warp.key,'textures/warpUI/Nether')
-                    break;
-                default:
-                    tpForm.button(warp.key,'textures/warpUI/End')
-                    break;
+            if(warp.value.scores){
+                let command = 'scoreboard players list @a[scores={'
+                warp.value.scores.forEach((score) => {
+                    command += `${score.name}=${score.value}..,`
+                })
+                command = command.slice(0,command.length-1)
+                command += '}]'
+                let playerList = runCommand(command)
+                if(playerList?.statusMessage.indexOf(player.nameTag) != -1 || playerList){
+                    warpList.push(warp)
+                    switch(warp.value.dimension){
+                        case "minecraft:overworld":
+                            tpForm.button(warp.key,'textures/warpUI/Overworld')
+                            break;
+                        case "minecraft:nether":
+                            tpForm.button(warp.key,'textures/warpUI/Nether')
+                            break;
+                        default:
+                            tpForm.button(warp.key,'textures/warpUI/End')
+                            break;
+                    }
+                }
             }
         }
         tpForm.show(player).then((tpFormResponse) => {
@@ -191,45 +202,84 @@ function openUi(player,globalDB,playerDB){
                         return;
                     }
                     let scoreList = []
-                    let value = true
-                    while(value){
-                        let scoreForm = new MessageFormData()
-                        scoreForm.title("Add Score?")
-                        scoreForm.body("Would you like to add a scoreboard and value to this warp?")
-                        scoreForm.button1("Yes")
-                        scoreForm.button2("No")
-                        scoreForm.show(player).then((scoreFormResponse) => {
-                            let { selection } = scoreFormResponse
-                            switch(selection){
-                                case 0://No
-                                    value = false
-                                    break;
-                                case 1://Yes
-                                    let addScoreForm = new ModalFormData()
-                                    addScoreForm.title("Add Score")
-                                    addScoreForm.textField("Scoreboard",'')
-                                    addScoreForm.slider("Must be greater than or equal to:",0,100,10)
-                                    addScoreForm.show(player).then((addScoreFormResponse) => {
-                                        let [ input, slider ] = addScoreFormResponse.formValues
-                                        scoreList.push({
-                                            name: input,
-                                            value: slider
-                                        })
+                    let scoreForm = new MessageFormData()
+                    scoreForm.title("Add Score?")
+                    scoreForm.body("Would you like to add a scoreboard and value to this warp?")
+                    scoreForm.button1("Yes")
+                    scoreForm.button2("No")
+                    scoreForm.show(player).then((scoreFormResponse) => {
+                        let { selection } = scoreFormResponse
+                        switch(selection){
+                            case 0:
+                                globalDB.set(input,{
+                                    dimension: player.dimension.id,
+                                    x: Math.floor(player.location.x),
+                                    y: Math.floor(player.location.y),
+                                    z: Math.floor(player.location.z)
+                                })
+                                let message = ` §9You have made a warp named §b${input} §9at §f(§9${Math.floor(player.location.x)} ${Math.floor(player.location.y)} ${Math.floor(player.location.z)}§f) §9in the`
+                                message += addDimension(player.dimension.id)
+                                runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"${message}"}]}`)
+                                break;
+                            case 1:
+                                let addScoreForm = new ModalFormData()
+                                addScoreForm.title("Add Score")
+                                addScoreForm.textField("Scoreboard",'')
+                                addScoreForm.slider("Must be greater than or equal to:",0,100,10)
+                                addScoreForm.show(player).then((addScoreFormResponse) => {
+                                    let [ input0, slider ] = addScoreFormResponse.formValues
+                                    scoreList.push({
+                                        name: input0,
+                                        value: slider
                                     })
-                                    break;
-                            }
-                        })
-                    }
-                    globalDB.set(input,{
-                        dimension: player.dimension.id,
-                        x: Math.floor(player.location.x),
-                        y: Math.floor(player.location.y),
-                        z: Math.floor(player.location.z),
-                        scores: scoreList
+                                    let scoreForm1 = new MessageFormData()
+                                    scoreForm1.title("Add Score?")
+                                    scoreForm1.body("Would you like to add a scoreboard and value to this warp?")
+                                    scoreForm1.button1("Yes")
+                                    scoreForm1.button2("No")
+                                    scoreForm1.show(player).then((scoreFormResponse1) => {
+                                        switch(scoreFormResponse1.selection){
+                                            case 0:
+                                                globalDB.set(input,{
+                                                    dimension: player.dimension.id,
+                                                    x: Math.floor(player.location.x),
+                                                    y: Math.floor(player.location.y),
+                                                    z: Math.floor(player.location.z),
+                                                    scores: scoreList
+                                                })
+                                                let message = ` §9You have made a warp named §b${input} §9at §f(§9${Math.floor(player.location.x)} ${Math.floor(player.location.y)} ${Math.floor(player.location.z)}§f) §9in the`
+                                                message += addDimension(player.dimension.id)
+                                                runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"${message}"}]}`)
+                                                break;
+                                            case 1:
+                                                let addScoreForm1 = new ModalFormData()
+                                                addScoreForm1.title("Add Score")
+                                                addScoreForm1.textField("Scoreboard",'')
+                                                addScoreForm1.slider("Must be greater than or equal to:",0,100,10)
+                                                addScoreForm1.show(player).then((addScoreFormResponse1) => {
+                                                    let [ input1, slider1 ] = addScoreFormResponse1.formValues
+                                                    scoreList.push({
+                                                        name: input1,
+                                                        value: slider1
+                                                    })
+                                                    globalDB.set(input,{
+                                                        dimension: player.dimension.id,
+                                                        x: Math.floor(player.location.x),
+                                                        y: Math.floor(player.location.y),
+                                                        z: Math.floor(player.location.z),
+                                                        scores: scoreList
+                                                    })
+                                                    let message1 = ` §9You have made a warp named §b${input} §9at §f(§9${Math.floor(player.location.x)} ${Math.floor(player.location.y)} ${Math.floor(player.location.z)}§f) §9in the`
+                                                    message1 += addDimension(player.dimension.id)
+                                                    runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"${message1}"}]}`)
+                                                })
+                                                break;
+                                        }
+                                    })
+                                })
+                                break;
+                        }
                     })
-                    let message = ` §9You have made a warp named §b${input} §9at §f(§9${Math.floor(player.location.x)} ${Math.floor(player.location.y)} ${Math.floor(player.location.z)}§f) §9in the`
-                    message += addDimension(player.dimension.id)
-                    runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"${message}"}]}`)
                 })
                 break;
             case 1:
@@ -241,17 +291,28 @@ function openUi(player,globalDB,playerDB){
                 let warpList = []
                 tpForm.title("Teleport to Warp")
                 for(const warp of globalDB.getData().data){
-                    warpList.push(warp)
-                    switch(warp.value.dimension){
-                        case "minecraft:overworld":
-                            tpForm.button(warp.key,'textures/warpUI/Overworld')
-                            break;
-                        case "minecraft:nether":
-                            tpForm.button(warp.key,'textures/warpUI/Nether')
-                            break;
-                        default:
-                            tpForm.button(warp.key,'textures/warpUI/End')
-                            break;
+                    if(warp.value.scores){
+                        let command = 'scoreboard players list @a[scores={'
+                        warp.value.scores.forEach((score) => {
+                            command += `${score.name}=${score.value}..,`
+                        })
+                        command = command.slice(0,command.length-1)
+                        command += '}]'
+                        let playerList = runCommand(command)
+                        if(playerList?.statusMessage.indexOf(player.nameTag) != -1 || playerList){
+                            warpList.push(warp)
+                            switch(warp.value.dimension){
+                                case "minecraft:overworld":
+                                    tpForm.button(warp.key,'textures/warpUI/Overworld')
+                                    break;
+                                case "minecraft:nether":
+                                    tpForm.button(warp.key,'textures/warpUI/Nether')
+                                    break;
+                                default:
+                                    tpForm.button(warp.key,'textures/warpUI/End')
+                                    break;
+                            }
+                        }
                     }
                 }
                 tpForm.show(player).then((tpFormResponse) => {
