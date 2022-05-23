@@ -34,16 +34,7 @@ const registration = new CommandBuilder()
 .addGroup(group => {
     return group.setName('set').setDescription('set a warp').addInput(input => {
         return input.setRequired(true).setType('string').setName('warpname')
-    }).addInput(input => {
-        return input.setRequired(false).setType('string').setName('warptype')
     }).setAliases(['s'])
-})
-.addGroup(group => {
-    return group.setName('add').setDescription('add someone').addInput(input => {
-        return input.setRequired(true).setType('string').setName('warpname')
-    }).addInput(input => {
-        return input.setRequired(true).setType('string').setName('playername')
-    }).setAliases(['a'])
 })
 
 CommandHandler.register(registration, (interaction) => {
@@ -55,37 +46,15 @@ CommandHandler.register(registration, (interaction) => {
     switch(group.getName()){
         case "set":
             let setName = group.getInput('warpname').getValue()
-            let warpType = group.getInput('warptype').getValue()
-            if(warpType == 'global'){
-                if(!player.hasTag('staff')){
-                    runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cUnknown input: global. Please Check that the input exists and that you have permission to use it."}]}`)
-                    break;
-                }
-                if(globalDB.has(setName)){
-                    runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §c${setName} already exists. Choose a new name or delete the old one."}]}`)
-                    break;
-                }
-                globalDB.set(setName,{
-                    dimension: player.dimension.id,
-                    x: Math.floor(player.location.x),
-                    y: Math.floor(player.location.y),
-                    z: Math.floor(player.location.z)
-                })
-                let message = ` §9You have made a warp named §b${setName} §9at §f(§9${Math.floor(player.location.x)} ${Math.floor(player.location.y)} ${Math.floor(player.location.z)}§f) §9in the`
-                message += addDimension(player.dimension.id)
-                runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"${message}"}]}`)
+            if(!player.hasTag('5fs:op')){
+                runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cUnknown command: delete. Please Check that the command exists and that you have permission to use it."}]}`)
                 break;
             }
-            if(globalDB.has(setName) || playerDB.has(setName)){
+            if(globalDB.has(setName)){
                 runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §c${setName} already exists. Choose a new name or delete the old one."}]}`)
                 break;
             }
-            let commandResponse = runCommand(`testforblock ${Math.floor(player.location.x)} ${Math.floor(player.location.y)} ${Math.floor(player.location.z)} air`, player.dimension.id)
-            if(!commandResponse?.statusMessage){
-                runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cInvalid placement for a warp. Please clear the spot where you want the warp to be."}]}`)
-                break;
-            }
-            playerDB.set(setName,{
+            globalDB.set(setName,{
                 dimension: player.dimension.id,
                 x: Math.floor(player.location.x),
                 y: Math.floor(player.location.y),
@@ -97,34 +66,35 @@ CommandHandler.register(registration, (interaction) => {
             break;
         case "delete":
             let delName = group.getInput('warpname').getValue()
+            if(!player.hasTag('5fs:op')){
+                runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cUnknown command: delete. Please Check that the command exists and that you have permission to use it."}]}`)
+                break;
+            }
             if(globalDB.has(delName)){
-                if(!player.hasTag('staff')){
-                    runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cUnknown warp: ${delName}. Please Check that the warp exists and that you have permission to delete it."}]}`)
-                    break;
-                }
                 globalDB.remove(delName)
                 runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §9You have §cremoved §9the warp §b${delName}§9!"}]}`)
                 break;
             }
-            if(!playerDB.has(delName)){
-                runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cUnknown warp: ${delName}. Please Check that the warp exists and that you have permission to delete it."}]}`)
-                break;
-            }
-            playerDB.remove(delName)
-            runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §9You have §cremoved §9the warp §b${delName}§9!"}]}`)
+            runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cUnknown warp: ${delName}. Please Check that the warp exists and that you have permission to delete it."}]}`)
             break;
         case "warpname":
             let tpName = group.getValue();
             if(globalDB.has(tpName)) {
+                let scores = globalDB.getVal(tpName).scores
+                if(scores){
+                    let command = 'scoreboard players list @a[scores={'
+                    scores.forEach((score) => {
+                        command += `${score.name}=${score.value}..,`
+                    })
+                    command = command.slice(0,command.length-1)
+                    command += '}]'
+                    let playerList = runCommand(command)
+                    if(playerList?.statusMessage.indexOf(player.nameTag) == -1){
+                        runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cUnknown warp: ${tpName}. Please Check that the warp exists."}]}`)
+                        break;
+                    }
+                }
                 let cords = globalDB.getVal(tpName)
-                runCommand(`fill ${cords.x} ${cords.y} ${cords.z} ${cords.x} ${cords.y+1} ${cords.z} air`, cords.dimension)
-                runCommand(`tp ${player.nameTag} ${cords.x} ${cords.y} ${cords.z}`, cords.dimension)
-                runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §9You have §asuccessfully §9warped to §b${tpName}§9!"}]}`)
-                break;
-            }
-            if(playerDB.has(tpName)){
-                let cords = playerDB.getVal(tpName)
-                runCommand(`fill ${cords.x} ${cords.y} ${cords.z} ${cords.x} ${cords.y+1} ${cords.z} air`, cords.dimension)
                 runCommand(`tp ${player.nameTag} ${cords.x} ${cords.y} ${cords.z}`, cords.dimension)
                 runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §9You have §asuccessfully §9warped to §b${tpName}§9!"}]}`)
                 break;
@@ -132,14 +102,8 @@ CommandHandler.register(registration, (interaction) => {
             runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cUnknown warp: ${tpName}. Please Check that the warp exists."}]}`)
             break;
         case "list":
-            runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"§9Public Warps:"}]}`)
+            runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"§9Warps:"}]}`)
             globalDB.getData().data.forEach(obj => {
-                let message = `§f- §b${obj.key} §f(§9${obj.value.x} ${obj.value.y} ${obj.value.z}§f)`
-                message += addDimension(obj.value.dimension)
-                runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"${message}"}]}`)
-            })
-            runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"\n§9Private Warps:"}]}`)
-            playerDB.getData().data.forEach(obj => {
                 let message = `§f- §b${obj.key} §f(§9${obj.value.x} ${obj.value.y} ${obj.value.z}§f)`
                 message += addDimension(obj.value.dimension)
                 runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":"${message}"}]}`)
@@ -178,10 +142,39 @@ function runCommand(command, dimension = 'overworld') {
 }
 
 function openUi(player,globalDB,playerDB){
+    if(!player.hasTag('5fs:op')){
+        if(globalDB.getData().data.length == 0){
+            runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cYou do not have any warps to teleport to! Try creating one to teleport to it."}]}`)
+            return;
+        }
+        let tpForm = new ActionFormData()
+        let warpList = []
+        tpForm.title("Teleport to Warp")
+        for(const warp of globalDB.getData().data){
+            warpList.push(warp)
+            switch(warp.value.dimension){
+                case "minecraft:overworld":
+                    tpForm.button(warp.key,'textures/warpUI/Overworld')
+                    break;
+                case "minecraft:nether":
+                    tpForm.button(warp.key,'textures/warpUI/Nether')
+                    break;
+                default:
+                    tpForm.button(warp.key,'textures/warpUI/End')
+                    break;
+            }
+        }
+        tpForm.show(player).then((tpFormResponse) => {
+            const { selection } = tpFormResponse;
+            let cords = warpList[selection].value
+            runCommand(`tp ${player.nameTag} ${cords.x} ${cords.y} ${cords.z}`, cords.dimension)
+            runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §9You have §asuccessfully §9warped to §b${warpList[selection].key}§9!"}]}`)
+        })
+        return;
+    }
     let MainForm = new ActionFormData()
     MainForm.title("Warps")
     MainForm.button("Set", 'textures/warpUI/SetWarp')
-    MainForm.button("Delete", 'textures/warpUI/CrossWarp')
     MainForm.button("Teleport", 'textures/warpUI/CheckWarp')
     MainForm.show(player).then((MainFormResponse) => {
         const { selection } = MainFormResponse;
@@ -197,16 +190,42 @@ function openUi(player,globalDB,playerDB){
                         runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §c${setName} already exists. Choose a new name or delete the old one."}]}`)
                         return;
                     }
-                    let commandResponse = runCommand(`testforblock ${Math.floor(player.location.x)} ${Math.floor(player.location.y)} ${Math.floor(player.location.z)} air`, player.dimension.id)
-                    if(!commandResponse?.statusMessage){
-                        runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cInvalid placement for a warp. Please clear the spot where you want the warp to be."}]}`)
-                        return;
+                    let scoreList = []
+                    let value = true
+                    while(value){
+                        let scoreForm = new MessageFormData()
+                        scoreForm.title("Add Score?")
+                        scoreForm.body("Would you like to add a scoreboard and value to this warp?")
+                        scoreForm.button1("Yes")
+                        scoreForm.button2("No")
+                        scoreForm.show(player).then((scoreFormResponse) => {
+                            let { selection } = scoreFormResponse
+                            switch(selection){
+                                case 0://No
+                                    value = false
+                                    break;
+                                case 1://Yes
+                                    let addScoreForm = new ModalFormData()
+                                    addScoreForm.title("Add Score")
+                                    addScoreForm.textField("Scoreboard",'')
+                                    addScoreForm.slider("Must be greater than or equal to:",0,100,10)
+                                    addScoreForm.show(player).then((addScoreFormResponse) => {
+                                        let [ input, slider ] = addScoreFormResponse.formValues
+                                        scoreList.push({
+                                            name: input,
+                                            value: slider
+                                        })
+                                    })
+                                    break;
+                            }
+                        })
                     }
-                    playerDB.set(input,{
+                    globalDB.set(input,{
                         dimension: player.dimension.id,
                         x: Math.floor(player.location.x),
                         y: Math.floor(player.location.y),
-                        z: Math.floor(player.location.z)
+                        z: Math.floor(player.location.z),
+                        scores: scoreList
                     })
                     let message = ` §9You have made a warp named §b${input} §9at §f(§9${Math.floor(player.location.x)} ${Math.floor(player.location.y)} ${Math.floor(player.location.z)}§f) §9in the`
                     message += addDimension(player.dimension.id)
@@ -214,47 +233,9 @@ function openUi(player,globalDB,playerDB){
                 })
                 break;
             case 1:
-                if(playerDB.getData().data.length == 0){
-                    runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cYou do not have any warps to delete! Try creating one to delete it."}]}`)
-                    break;
-                }
-                let delForm = new ActionFormData()
-                delForm.title("Delete Warp")
-                for(const warp of playerDB.getData().data){
-                    switch(warp.value.dimension){
-                        case "minecraft:overworld":
-                            delForm.button(warp.key,'textures/warpUI/Overworld')
-                            break;
-                        case "minecraft:nether":
-                            delForm.button(warp.key,'textures/warpUI/Nether')
-                            break;
-                        default:
-                            delForm.button(warp.key,'textures/warpUI/End')
-                            break;
-                    }
-                }
-                delForm.show(player).then((delFormResponse) => {
-                    const delSelect = delFormResponse.selection;
-                    let confirmForm = new MessageFormData()
-                    confirmForm.title(`Delete ${playerDB.getData().data[delSelect].key}`)
-                    confirmForm.body(`Are you sure you want to delete ${playerDB.getData().data[delSelect].key}`)
-                    confirmForm.button1("Yes")
-                    confirmForm.button2("No")
-                    confirmForm.show(player).then((confirmFormResponse) => {
-                        const { selection } = confirmFormResponse;
-                        if(selection == 1){
-                            runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §9You have §cremoved §9the warp §b${playerDB.getData().data[delSelect].key}§9!"}]}`)
-                            playerDB.remove(playerDB.getData().data[delSelect].key)
-                            return;
-                        }
-                        runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §9Your request to delete a warp has been canceled!"}]}`)
-                    })
-                })
-                break;
-            case 2:
-                if(globalDB.getData().data.length == 0 && playerDB.getData().data.length == 0){
+                if(globalDB.getData().data.length == 0){
                     runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §cYou do not have any warps to teleport to! Try creating one to teleport to it."}]}`)
-                    break;
+                    return;
                 }
                 let tpForm = new ActionFormData()
                 let warpList = []
@@ -273,52 +254,11 @@ function openUi(player,globalDB,playerDB){
                             break;
                     }
                 }
-                for(const warp of playerDB.getData().data){
-                    warpList.push(warp)
-                    switch(warp.value.dimension){
-                        case "minecraft:overworld":
-                            tpForm.button(warp.key,'textures/warpUI/Overworld')
-                            break;
-                        case "minecraft:nether":
-                            tpForm.button(warp.key,'textures/warpUI/Nether')
-                            break;
-                        default:
-                            tpForm.button(warp.key,'textures/warpUI/End')
-                            break;
-                    }
-                }
                 tpForm.show(player).then((tpFormResponse) => {
                     const { selection } = tpFormResponse;
                     let cords = warpList[selection].value
-                    runCommand(`fill ${cords.x} ${cords.y} ${cords.z} ${cords.x} ${cords.y+1} ${cords.z} air`, cords.dimension)
                     runCommand(`tp ${player.nameTag} ${cords.x} ${cords.y} ${cords.z}`, cords.dimension)
                     runCommand(`tellraw "${player.nameTag}" {"rawtext":[{"text":" §9You have §asuccessfully §9warped to §b${warpList[selection].key}§9!"}]}`)
-                })
-                break;
-            case 3:
-                let friendFormW = new ModalFormData();
-                let warps = []
-                let warpNames = []
-                for(const warp of playerDB.getData().data){
-                  warps.push(warp)
-                  warpNames.push(warp.key)
-                }
-                friendFormW.title("Add someone")
-                friendFormW.dropdown("Warps",warpNames)
-                friendFormW.show(player).then((friendFormWResponse) => {
-                  let warp = warps[friendFormWResponse.formValues[0]]
-                  let friendFormP = new ModalFormData();
-                  let players = []
-                  for(const player of world.getPlayers()){
-                    players.push(player.nameTag)
-                  }
-                  friendFormP.title("Add someone")
-                  friendFormP.dropdown("Players",players)
-                  friendFormP.show(player).then((friendFormPResponse) => {
-                    let fPlayer = players[friendFormPResponse.formValues[0]]
-                    let fPlayerDB = new Database(fPlayer.nameTag + 'Warps')
-                    fPlayerDB.set(player.nameTag + '-' + warp.key,warp.value)
-                  })
                 })
                 break;
         }

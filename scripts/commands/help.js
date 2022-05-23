@@ -14,7 +14,7 @@ const registration = new CommandBuilder()
 })
 
 CommandHandler.register(registration, (interaction) => {
-  runCommand(`tellraw "${interaction.player.nameTag}" {"rawtext":[{"text":"§9Command Prefix§f: §b-\n §9List of commands§f:\n- §9warp set §b<warp name>\n§f- §9warp delete §b<warp name>\n§f- §9warp §b<warp name>\n§f- §9warp list\n§f- §9warp form"}]}`)
+  runCommand(`tellraw "${interaction.player.nameTag}" {"rawtext":[{"text":"§9Command Prefix§f: §b-\n§f- §9warp §b<warp name>\n§f- §9warp list\n§f- §9warp form"}]}`)
 })
 
 function runCommand(command, dimension = 'overworld') {
