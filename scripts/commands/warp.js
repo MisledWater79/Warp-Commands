@@ -81,7 +81,7 @@ CommandHandler.register(registration, (interaction) => {
             let tpName = group.getValue();
             if(globalDB.has(tpName)) {
                 let scores = globalDB.getVal(tpName).scores
-                if(scores){
+                if(scores && !player.hasTag('5fs:op')){
                     let command = 'scoreboard players list @a[scores={'
                     scores.forEach((score) => {
                         command += `${score.name}=${score.value}..,`
@@ -159,7 +159,7 @@ function openUi(player,globalDB,playerDB){
                 command = command.slice(0,command.length-1)
                 command += '}]'
                 let playerList = runCommand(command)
-                if(playerList?.statusMessage.indexOf(player.nameTag) != -1 || playerList){
+                if(playerList?.statusMessage.indexOf(player.nameTag) != -1 && playerList?.statusMessage.indexOf(player.nameTag) != null || playerList){
                     warpList.push(warp)
                     switch(warp.value.dimension){
                         case "minecraft:overworld":
@@ -172,6 +172,19 @@ function openUi(player,globalDB,playerDB){
                             tpForm.button(warp.key,'textures/warpUI/End')
                             break;
                     }
+                }
+            } else {
+                warpList.push(warp)
+                switch(warp.value.dimension){
+                    case "minecraft:overworld":
+                        tpForm.button(warp.key,'textures/warpUI/Overworld')
+                        break;
+                    case "minecraft:nether":
+                        tpForm.button(warp.key,'textures/warpUI/Nether')
+                        break;
+                    default:
+                        tpForm.button(warp.key,'textures/warpUI/End')
+                        break;
                 }
             }
         }
@@ -291,28 +304,17 @@ function openUi(player,globalDB,playerDB){
                 let warpList = []
                 tpForm.title("Teleport to Warp")
                 for(const warp of globalDB.getData().data){
-                    if(warp.value.scores){
-                        let command = 'scoreboard players list @a[scores={'
-                        warp.value.scores.forEach((score) => {
-                            command += `${score.name}=${score.value}..,`
-                        })
-                        command = command.slice(0,command.length-1)
-                        command += '}]'
-                        let playerList = runCommand(command)
-                        if(playerList?.statusMessage.indexOf(player.nameTag) != -1 || playerList){
-                            warpList.push(warp)
-                            switch(warp.value.dimension){
-                                case "minecraft:overworld":
-                                    tpForm.button(warp.key,'textures/warpUI/Overworld')
-                                    break;
-                                case "minecraft:nether":
-                                    tpForm.button(warp.key,'textures/warpUI/Nether')
-                                    break;
-                                default:
-                                    tpForm.button(warp.key,'textures/warpUI/End')
-                                    break;
-                            }
-                        }
+                    warpList.push(warp)
+                    switch(warp.value.dimension){
+                        case "minecraft:overworld":
+                            tpForm.button(warp.key,'textures/warpUI/Overworld')
+                            break;
+                        case "minecraft:nether":
+                            tpForm.button(warp.key,'textures/warpUI/Nether')
+                            break;
+                        default:
+                            tpForm.button(warp.key,'textures/warpUI/End')
+                            break;
                     }
                 }
                 tpForm.show(player).then((tpFormResponse) => {
